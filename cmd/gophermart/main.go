@@ -8,6 +8,7 @@ import (
 	"github.com/Adigezalov/gophermart/internal/health"
 	"github.com/Adigezalov/gophermart/internal/middleware"
 	"github.com/Adigezalov/gophermart/internal/migrations"
+	"github.com/Adigezalov/gophermart/internal/order"
 	"github.com/Adigezalov/gophermart/internal/repositories"
 	"github.com/Adigezalov/gophermart/internal/tokens"
 	"github.com/Adigezalov/gophermart/internal/user"
@@ -62,21 +63,27 @@ func main() {
 		// Создаем репозитории
 		userRepo := user.NewDatabaseRepository(dbRepo.GetDB())
 		tokenRepo := tokens.NewDatabaseRepository(dbRepo.GetDB())
+		orderRepo := order.NewDatabaseRepository(dbRepo.GetDB())
 
 		// Создаем сервисы
 		tokenService := tokens.NewService(tokenRepo, cfg.JWTSecret, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 		userService := user.NewService(userRepo, tokenService)
+		orderService := order.NewService(orderRepo)
 
 		// Создаем middleware
 		authMiddleware := middleware.NewAuthMiddleware(tokenService)
 
 		// Создаем handlers
 		userHandler := user.NewHandler(userService)
+		orderHandler := order.NewHandler(orderService)
 
 		// Пользовательские маршруты
 		userRoutes := api.PathPrefix("/user").Subrouter()
 		userRoutes.HandleFunc("/register", userHandler.Register).Methods("POST")
 		userRoutes.HandleFunc("/login", userHandler.Login).Methods("POST")
+
+		// Защищенные маршруты для заказов
+		userRoutes.HandleFunc("/orders", authMiddleware.RequireAuth(orderHandler.SubmitOrder)).Methods("POST")
 
 		// Защищенные маршруты
 		api.HandleFunc("/health/auth", authMiddleware.RequireAuth(healthHandler.CheckAuth)).Methods("GET")

@@ -99,6 +99,7 @@ func (m *Migrator) getMigrationFiles() ([]string, error) {
 	files := []string{
 		"001_create_users_table.sql",
 		"002_create_tokens_table.sql",
+		"003_create_orders_table.sql",
 	}
 
 	return files, nil
@@ -136,6 +137,9 @@ func (m *Migrator) getEmbeddedMigration(filename string) (string, error) {
 
 	case "002_create_tokens_table.sql":
 		return m.getTokensTableMigration(), nil
+
+	case "003_create_orders_table.sql":
+		return m.getOrdersTableMigration(), nil
 
 	default:
 		return "", fmt.Errorf("неизвестная миграция: %s", filename)
@@ -239,4 +243,31 @@ func (m *Migrator) ShowStatus() error {
 	log.Printf("Применено: %d из %d миграций", appliedCount, totalCount)
 
 	return nil
+}
+
+// getOrdersTableMigration возвращает SQL для создания таблицы заказов
+func (m *Migrator) getOrdersTableMigration() string {
+	return `-- Создание таблицы заказов
+CREATE TABLE IF NOT EXISTS orders (
+    id SERIAL PRIMARY KEY,
+    number VARCHAR(255) NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'NEW',
+    accrual DECIMAL(10,2) NULL,
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Создание индексов
+CREATE INDEX IF NOT EXISTS idx_orders_number ON orders(number);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_uploaded_at ON orders(uploaded_at DESC);
+
+-- Триггер для автоматического обновления updated_at
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
+CREATE TRIGGER update_orders_updated_at 
+    BEFORE UPDATE ON orders 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();`
 }

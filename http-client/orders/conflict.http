@@ -1,0 +1,58 @@
+### Тестирование конфликта заказов между пользователями
+
+### 1. Регистрируем первого пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "user1",
+  "password": "password123"
+}
+
+### 2. Регистрируем второго пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "user2",
+  "password": "password123"
+}
+
+### 3. Авторизуемся как первый пользователь
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "user1",
+  "password": "password123"
+}
+
+### 4. Первый пользователь загружает заказ (ожидается 202)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer USER1_ACCESS_TOKEN_HERE
+
+4532015112830366
+
+### 5. Авторизуемся как второй пользователь
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "user2",
+  "password": "password123"
+}
+
+### 6. Второй пользователь пытается загрузить тот же заказ (ожидается 409: заказ уже загружен другим пользователем)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer USER2_ACCESS_TOKEN_HERE
+
+4532015112830366
+
+### 7. Второй пользователь загружает свой заказ (ожидается 202)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer USER2_ACCESS_TOKEN_HERE
+
+1234567897
