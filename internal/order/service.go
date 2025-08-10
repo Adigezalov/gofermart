@@ -160,3 +160,13 @@ type OrderValidationError struct {
 func (e *OrderValidationError) Error() string {
 	return e.Message
 }
+
+// GetUserOrders получает все заказы пользователя
+func (s *Service) GetUserOrders(userID int) ([]*Order, error) {
+	orders, err := s.repo.GetOrdersByUserID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось получить заказы пользователя: %w", err)
+	}
+
+	return orders, nil
+}

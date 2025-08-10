@@ -84,6 +84,7 @@ func main() {
 
 		// Защищенные маршруты для заказов
 		userRoutes.HandleFunc("/orders", authMiddleware.RequireAuth(orderHandler.SubmitOrder)).Methods("POST")
+		userRoutes.HandleFunc("/orders", authMiddleware.RequireAuth(orderHandler.GetOrders)).Methods("GET")
 
 		// Защищенные маршруты
 		api.HandleFunc("/health/auth", authMiddleware.RequireAuth(healthHandler.CheckAuth)).Methods("GET")

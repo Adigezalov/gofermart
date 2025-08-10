@@ -1,0 +1,55 @@
+### Тестирование получения списка заказов GET /api/user/orders
+
+### 1. Сначала зарегистрируем пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "orderlist",
+  "password": "password123"
+}
+
+### 2. Авторизуемся и получаем токены
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "orderlist",
+  "password": "password123"
+}
+
+### 3. Получаем список заказов (пустой список - ожидается 204: нет данных)
+GET http://localhost:8080/api/user/orders
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 4. Загружаем первый заказ
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+79927398713
+
+### 5. Получаем список заказов (один заказ - ожидается 200 с JSON массивом)
+GET http://localhost:8080/api/user/orders
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 6. Загружаем второй заказ
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+12345678903
+
+### 7. Загружаем третий заказ
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+9278923470
+
+### 8. Получаем полный список заказов (три заказа - ожидается 200 с JSON массивом, сортировка по uploaded_at DESC)
+GET http://localhost:8080/api/user/orders
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 9. Попытка получить список без токена (ожидается 401: пользователь не авторизован)
+GET http://localhost:8080/api/user/orders
