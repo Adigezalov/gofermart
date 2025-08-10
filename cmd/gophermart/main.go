@@ -28,6 +28,12 @@ func main() {
 	// Создаем роутер
 	router := mux.NewRouter()
 
+	// Создаем logging middleware
+	loggingMiddleware := middleware.NewLoggingMiddleware()
+
+	// Применяем logging middleware ко всем запросам
+	router.Use(loggingMiddleware.LogRequest)
+
 	// Создаем health домен
 	var healthRepo health.Repository
 	if dbRepo != nil {
