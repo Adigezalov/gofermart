@@ -16,12 +16,12 @@ type DatabaseRepository struct {
 func NewDatabaseRepository(dsn string) (*DatabaseRepository, error) {
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return nil, fmt.Errorf("не удалось открыть базу данных: %w", err)
 	}
 
 	// Проверяем подключение
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, fmt.Errorf("не удалось подключиться к базе данных: %w", err)
 	}
 
 	return &DatabaseRepository{db: db}, nil

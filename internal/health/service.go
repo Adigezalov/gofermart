@@ -24,19 +24,19 @@ func (s *Service) GetDatabaseHealthStatus() *DatabaseResponse {
 	if s.repo == nil {
 		return &DatabaseResponse{
 			Status:   "error",
-			Database: "not configured",
+			Database: "не настроена",
 		}
 	}
 
 	if err := s.repo.Ping(); err != nil {
 		return &DatabaseResponse{
 			Status:   "error",
-			Database: "connection failed",
+			Database: "соединение не удалось",
 		}
 	}
 
 	return &DatabaseResponse{
 		Status:   "ok",
-		Database: "connected",
+		Database: "подключена",
 	}
 }

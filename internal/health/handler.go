@@ -18,20 +18,20 @@ func NewHandler(service *Service) *Handler {
 }
 
 // Check обрабатывает GET /api/health/check
-func (h *Handler) Check(w http.ResponseWriter) {
+func (h *Handler) Check(w http.ResponseWriter, r *http.Request) {
 	response := h.service.GetHealthStatus()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		return
 	}
 }
 
 // CheckDatabase обрабатывает GET /api/health/db
-func (h *Handler) CheckDatabase(w http.ResponseWriter) {
+func (h *Handler) CheckDatabase(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := h.service.GetDatabaseHealthStatus()
