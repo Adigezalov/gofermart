@@ -88,3 +88,47 @@ func (s *Service) validateRegisterRequest(req *RegisterRequest) error {
 
 	return nil
 }
+
+// LoginUser авторизует пользователя
+func (s *Service) LoginUser(req *LoginRequest) (*tokens.TokenPair, error) {
+	// Валидация входных данных
+	if err := s.validateLoginRequest(req); err != nil {
+		return nil, err
+	}
+
+	// Получаем пользователя по логину
+	user, err := s.repo.GetUserByLogin(req.Login)
+	if err != nil {
+		return nil, fmt.Errorf("неверная пара логин/пароль")
+	}
+
+	// Проверяем пароль
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		return nil, fmt.Errorf("неверная пара логин/пароль")
+	}
+
+	// Генерируем новые токены (старые refresh токены автоматически удалятся)
+	tokenPair, err := s.tokenService.GenerateTokenPair(user.ID, user.Login)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось создать токены: %w", err)
+	}
+
+	return tokenPair, nil
+}
+
+// validateLoginRequest валидирует запрос на авторизацию
+func (s *Service) validateLoginRequest(req *LoginRequest) error {
+	if req == nil {
+		return errors.New("запрос обязателен")
+	}
+
+	if strings.TrimSpace(req.Login) == "" {
+		return errors.New("логин обязателен")
+	}
+
+	if strings.TrimSpace(req.Password) == "" {
+		return errors.New("пароль обязателен")
+	}
+
+	return nil
+}

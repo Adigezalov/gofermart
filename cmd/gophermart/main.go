@@ -65,6 +65,7 @@ func main() {
 		// Пользовательские маршруты
 		userRoutes := api.PathPrefix("/user").Subrouter()
 		userRoutes.HandleFunc("/register", userHandler.Register).Methods("POST")
+		userRoutes.HandleFunc("/login", userHandler.Login).Methods("POST")
 	}
 
 	// Запускаем сервер
