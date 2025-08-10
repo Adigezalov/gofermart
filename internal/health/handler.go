@@ -18,7 +18,7 @@ func NewHandler(service *Service) *Handler {
 }
 
 // Check обрабатывает GET /api/health/check
-func (h *Handler) Check(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Check(w http.ResponseWriter) {
 	response := h.service.GetHealthStatus()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -31,7 +31,7 @@ func (h *Handler) Check(w http.ResponseWriter, r *http.Request) {
 }
 
 // CheckDatabase обрабатывает GET /api/health/db
-func (h *Handler) CheckDatabase(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CheckDatabase(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := h.service.GetDatabaseHealthStatus()
@@ -42,5 +42,8 @@ func (h *Handler) CheckDatabase(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		return
+	}
 }
