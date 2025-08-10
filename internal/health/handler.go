@@ -47,3 +47,20 @@ func (h *Handler) CheckDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// CheckAuth обрабатывает GET /api/health/auth - защищенный healthcheck
+func (h *Handler) CheckAuth(w http.ResponseWriter, r *http.Request) {
+	// Этот метод будет вызван только для авторизованных пользователей
+	// благодаря middleware
+	response := &Response{
+		Status: "ok",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
+		return
+	}
+}

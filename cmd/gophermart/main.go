@@ -6,6 +6,7 @@ import (
 
 	"github.com/Adigezalov/gophermart/internal/config"
 	"github.com/Adigezalov/gophermart/internal/health"
+	"github.com/Adigezalov/gophermart/internal/middleware"
 	"github.com/Adigezalov/gophermart/internal/migrations"
 	"github.com/Adigezalov/gophermart/internal/repositories"
 	"github.com/Adigezalov/gophermart/internal/tokens"
@@ -41,6 +42,7 @@ func main() {
 	// Health check маршруты
 	api.HandleFunc("/health/check", healthHandler.Check).Methods("GET")
 	api.HandleFunc("/health/db", healthHandler.CheckDatabase).Methods("GET")
+	log.Println("Зарегистрированы публичные health check маршруты")
 
 	// Создаем сервисы только если есть подключение к БД
 	if dbRepo != nil {
@@ -59,6 +61,9 @@ func main() {
 		tokenService := tokens.NewService(tokenRepo, cfg.JWTSecret, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 		userService := user.NewService(userRepo, tokenService)
 
+		// Создаем middleware
+		authMiddleware := middleware.NewAuthMiddleware(tokenService)
+
 		// Создаем handlers
 		userHandler := user.NewHandler(userService)
 
@@ -66,6 +71,10 @@ func main() {
 		userRoutes := api.PathPrefix("/user").Subrouter()
 		userRoutes.HandleFunc("/register", userHandler.Register).Methods("POST")
 		userRoutes.HandleFunc("/login", userHandler.Login).Methods("POST")
+
+		// Защищенные маршруты
+		api.HandleFunc("/health/auth", authMiddleware.RequireAuth(healthHandler.CheckAuth)).Methods("GET")
+		log.Println("Зарегистрированы пользовательские и защищенные маршруты")
 	}
 
 	// Запускаем сервер

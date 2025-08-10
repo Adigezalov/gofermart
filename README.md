@@ -7,6 +7,8 @@
 - ✅ Регистрация пользователей
 - ✅ Авторизация пользователей
 - ✅ JWT токены (access + refresh)
+- ✅ Middleware для проверки авторизации
+- ✅ Защищенные эндпоинты
 - ✅ Автоматическое обновление refresh токенов
 - ✅ Автоматические миграции базы данных
 - ✅ Health check эндпоинты
@@ -53,6 +55,7 @@ make run
 ### Health Check
 - `GET /api/health/check` - Проверка работоспособности сервиса
 - `GET /api/health/db` - Проверка подключения к базе данных
+- `GET /api/health/auth` - Проверка авторизации (требует Bearer токен)
 
 ### Пользователи
 - `POST /api/user/register` - Регистрация пользователя
@@ -70,6 +73,13 @@ curl -X POST http://localhost:8080/api/user/register \
 curl -X POST http://localhost:8080/api/user/login \
   -H "Content-Type: application/json" \
   -d '{"login": "testuser", "password": "password123"}'
+```
+
+#### Пример использования защищенного эндпоинта:
+```bash
+# Сначала получите токен через авторизацию, затем:
+curl -X GET http://localhost:8080/api/health/auth \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
 ## Команды Make
