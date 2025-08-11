@@ -100,6 +100,8 @@ func (m *Migrator) getMigrationFiles() ([]string, error) {
 		"001_create_users_table.sql",
 		"002_create_tokens_table.sql",
 		"003_create_orders_table.sql",
+		"004_create_user_balances_table.sql",
+		"005_create_withdrawals_table.sql",
 	}
 
 	return files, nil
@@ -140,6 +142,12 @@ func (m *Migrator) getEmbeddedMigration(filename string) (string, error) {
 
 	case "003_create_orders_table.sql":
 		return m.getOrdersTableMigration(), nil
+
+	case "004_create_user_balances_table.sql":
+		return m.getUserBalancesTableMigration(), nil
+
+	case "005_create_withdrawals_table.sql":
+		return m.getWithdrawalsTableMigration(), nil
 
 	default:
 		return "", fmt.Errorf("неизвестная миграция: %s", filename)
@@ -270,4 +278,50 @@ CREATE TRIGGER update_orders_updated_at
     BEFORE UPDATE ON orders 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();`
+}
+
+// getUserBalancesTableMigration возвращает SQL для создания таблицы балансов пользователей
+func (m *Migrator) getUserBalancesTableMigration() string {
+	return `-- Создание таблицы балансов пользователей
+CREATE TABLE IF NOT EXISTS user_balances (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    current DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    withdrawn DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+-- Создание индексов
+CREATE INDEX IF NOT EXISTS idx_user_balances_user_id ON user_balances(user_id);
+
+-- Триггер для автоматического обновления updated_at
+DROP TRIGGER IF EXISTS update_user_balances_updated_at ON user_balances;
+CREATE TRIGGER update_user_balances_updated_at 
+    BEFORE UPDATE ON user_balances 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Создание балансов для существующих пользователей
+INSERT INTO user_balances (user_id, current, withdrawn)
+SELECT id, 0.00, 0.00 
+FROM users 
+WHERE id NOT IN (SELECT user_id FROM user_balances);`
+}
+
+// getWithdrawalsTableMigration возвращает SQL для создания таблицы списаний
+func (m *Migrator) getWithdrawalsTableMigration() string {
+	return `-- Создание таблицы списаний
+CREATE TABLE IF NOT EXISTS withdrawals (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    order_number VARCHAR(255) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    processed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Создание индексов для производительности
+CREATE INDEX IF NOT EXISTS idx_withdrawals_user_id ON withdrawals(user_id);
+CREATE INDEX IF NOT EXISTS idx_withdrawals_processed_at ON withdrawals(processed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_withdrawals_order_number ON withdrawals(order_number);`
 }

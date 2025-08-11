@@ -3,6 +3,7 @@ package order
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 // Repository интерфейс для работы с заказами в БД
@@ -10,6 +11,7 @@ type Repository interface {
 	CreateOrder(order *Order) error
 	GetOrderByNumber(number string) (*Order, error)
 	GetOrdersByUserID(userID int) ([]*Order, error)
+	GetOrdersByStatus(statuses []OrderStatus) ([]*Order, error)
 	UpdateOrderStatus(number string, status OrderStatus, accrual *float64) error
 }
 
@@ -73,6 +75,52 @@ func (r *DatabaseRepository) GetOrdersByUserID(userID int) ([]*Order, error) {
 	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("не удалось получить заказы пользователя: %w", err)
+	}
+	defer rows.Close()
+
+	var orders []*Order
+	for rows.Next() {
+		order := &Order{}
+		err := rows.Scan(
+			&order.ID, &order.Number, &order.UserID, &order.Status,
+			&order.Accrual, &order.UploadedAt, &order.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("не удалось сканировать заказ: %w", err)
+		}
+		orders = append(orders, order)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("ошибка при итерации по заказам: %w", err)
+	}
+
+	return orders, nil
+}
+
+// GetOrdersByStatus получает заказы по статусам
+func (r *DatabaseRepository) GetOrdersByStatus(statuses []OrderStatus) ([]*Order, error) {
+	if len(statuses) == 0 {
+		return []*Order{}, nil
+	}
+
+	// Создаем плейсхолдеры для IN clause
+	placeholders := make([]string, len(statuses))
+	args := make([]interface{}, len(statuses))
+	for i, status := range statuses {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = status
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, number, user_id, status, accrual, uploaded_at, updated_at 
+		FROM orders 
+		WHERE status IN (%s) 
+		ORDER BY uploaded_at ASC`, strings.Join(placeholders, ","))
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось получить заказы по статусу: %w", err)
 	}
 	defer rows.Close()
 

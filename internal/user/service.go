@@ -5,21 +5,24 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Adigezalov/gophermart/internal/balance"
 	"github.com/Adigezalov/gophermart/internal/tokens"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // Service содержит бизнес-логику для пользователей
 type Service struct {
-	repo         Repository
-	tokenService *tokens.Service
+	repo           Repository
+	tokenService   *tokens.Service
+	balanceService *balance.Service
 }
 
 // NewService создает новый экземпляр Service
-func NewService(repo Repository, tokenService *tokens.Service) *Service {
+func NewService(repo Repository, tokenService *tokens.Service, balanceService *balance.Service) *Service {
 	return &Service{
-		repo:         repo,
-		tokenService: tokenService,
+		repo:           repo,
+		tokenService:   tokenService,
+		balanceService: balanceService,
 	}
 }
 
@@ -53,6 +56,15 @@ func (s *Service) RegisterUser(req *RegisterRequest) (*tokens.TokenPair, error) 
 			return nil, fmt.Errorf("пользователь уже существует")
 		}
 		return nil, fmt.Errorf("не удалось создать пользователя: %w", err)
+	}
+
+	// Создаем начальный баланс для пользователя
+	if s.balanceService != nil {
+		if _, err := s.balanceService.GetUserBalance(user.ID); err != nil {
+			// Если баланс не существует, он будет создан автоматически в GetUserBalance
+			// Логируем ошибку, но не прерываем регистрацию
+			fmt.Printf("Предупреждение: не удалось создать баланс для пользователя %d: %v\n", user.ID, err)
+		}
 	}
 
 	// Генерируем токены

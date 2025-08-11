@@ -12,8 +12,8 @@ const (
 	DefaultDatabaseURI          = "postgres://user:password@localhost:5432/gofermart?sslmode=disable"
 	DefaultAccrualSystemAddress = "http://localhost:8081"
 	DefaultJWTSecret            = "your-secret-key-change-in-production"
-	DefaultAccessTokenTTL       = time.Minute
-	DefaultRefreshTokenTTL      = 120 * time.Hour // 5 дней
+	DefaultAccessTokenTTL       = 10 * time.Minute // 10 минут
+	DefaultRefreshTokenTTL      = 120 * time.Hour  // 5 дней
 )
 
 // Config содержит конфигурационные параметры приложения

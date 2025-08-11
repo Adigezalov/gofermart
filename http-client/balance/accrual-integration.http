@@ -1,0 +1,84 @@
+### Тестирование интеграции с внешней системой начислений
+
+### Этот тест демонстрирует работу с внешней системой начислений
+### Требует запущенного accrual сервиса на localhost:8081
+
+### 1. Регистрируем пользователя для тестирования начислений
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "accrualtest",
+  "password": "password123"
+}
+
+### 2. Авторизуемся
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "accrualtest",
+  "password": "password123"
+}
+
+### 3. Проверяем начальный баланс (0/0)
+GET http://localhost:8080/api/user/balance
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 4. Загружаем заказ, который будет обработан системой начислений
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+79927398713
+
+### 5. Проверяем статус заказа сразу после загрузки (должен быть NEW)
+GET http://localhost:8080/api/user/orders
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 6. Ждем 30-60 секунд для обработки accrual worker'ом...
+
+### 7. Проверяем статус заказа после обработки (может быть PROCESSING или PROCESSED)
+GET http://localhost:8080/api/user/orders
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 8. Проверяем баланс после обработки (если статус PROCESSED, должны появиться баллы)
+GET http://localhost:8080/api/user/balance
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 9. Загружаем еще один заказ для тестирования
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+49927398716
+
+### 10. Проверяем список заказов (должно быть 2 заказа)
+GET http://localhost:8080/api/user/orders
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 11. Ждем обработки второго заказа...
+
+### 12. Финальная проверка баланса
+GET http://localhost:8080/api/user/balance
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 13. Если есть баллы, пробуем списать
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "12345678903",
+  "sum": 50
+}
+
+### 14. Проверяем историю списаний
+GET http://localhost:8080/api/user/withdrawals
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Примечания:
+### - Accrual worker проверяет заказы каждые 30 секунд
+### - Статусы заказов: NEW → PROCESSING → PROCESSED/INVALID
+### - Баллы начисляются только при статусе PROCESSED
+### - Внешний сервис может возвращать разные суммы начислений
