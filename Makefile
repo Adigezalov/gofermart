@@ -1,4 +1,4 @@
-.PHONY: build run migrate migrate-status clean run-accrual run-full stop-all test-system
+.PHONY: build run migrate migrate-status clean run-accrual run-full stop-all test-system register-test-orders
 
 # Сборка приложения
 build:
@@ -104,7 +104,18 @@ test-system: build
 	@echo ""
 	@echo "Для полного тестирования:"
 	@echo "  1. make run-full"
-	@echo "  2. Откройте http-client/complete-loyalty-system.http"
+	@echo "  2. make register-test-orders (регистрация заказов в accrual)"
+	@echo "  3. Откройте http-client/complete-loyalty-system.http"
+
+# Регистрация тестовых заказов в accrual системе
+register-test-orders:
+	@echo "📦 Регистрация тестовых заказов в accrual системе..."
+	@curl -s -X POST http://localhost:8081/api/orders -H "Content-Type: application/json" -d '{"order":"79927398713"}' > /dev/null && echo "✅ Заказ 79927398713 зарегистрирован" || echo "❌ Ошибка регистрации заказа 79927398713"
+	@curl -s -X POST http://localhost:8081/api/orders -H "Content-Type: application/json" -d '{"order":"49927398716"}' > /dev/null && echo "✅ Заказ 49927398716 зарегистрирован" || echo "❌ Ошибка регистрации заказа 49927398716"
+	@curl -s -X POST http://localhost:8081/api/orders -H "Content-Type: application/json" -d '{"order":"12345678903"}' > /dev/null && echo "✅ Заказ 12345678903 зарегистрирован" || echo "❌ Ошибка регистрации заказа 12345678903"
+	@curl -s -X POST http://localhost:8081/api/orders -H "Content-Type: application/json" -d '{"order":"37828934750"}' > /dev/null && echo "✅ Заказ 37828934750 зарегистрирован" || echo "❌ Ошибка регистрации заказа 37828934750"
+	@echo "🎉 Все тестовые заказы зарегистрированы в accrual системе!"
+	@echo "Теперь accrual worker сможет их обработать."
 
 # Запуск с переменными окружения и accrual
 run-full-env: build
@@ -129,6 +140,7 @@ help:
 	@echo "  run-full      - Запустить gophermart + accrual (рекомендуется)"
 	@echo "  run-full-env  - Запустить полную систему с переменными из .env"
 	@echo "  test-system   - Быстрый тест работоспособности системы"
+	@echo "  register-test-orders - Зарегистрировать тестовые заказы в accrual"
 	@echo "  stop-all      - Остановить все процессы"
 	@echo "  migrate       - Применить миграции"
 	@echo "  migrate-status - Показать статус миграций"

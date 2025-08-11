@@ -134,20 +134,26 @@ func (w *Worker) handleAccrualResponse(ord *order.Order, resp *AccrualResponse) 
 		return nil
 
 	case StatusProcessed:
-		// Заказ обработан - обновляем статус и начисляем баллы
-		log.Printf("Заказ %s обработан, начисляем %.2f баллов пользователю %d",
-			ord.Number, *resp.Accrual, ord.UserID)
+		// Заказ обработан - обновляем статус и начисляем баллы (если есть)
+		if resp.Accrual != nil && *resp.Accrual > 0 {
+			log.Printf("Заказ %s обработан, начисляем %.2f баллов пользователю %d",
+				ord.Number, *resp.Accrual, ord.UserID)
+		} else {
+			log.Printf("Заказ %s обработан, но начислений нет", ord.Number)
+		}
 
 		// Обновляем статус заказа
 		if err := w.orderRepo.UpdateOrderStatus(ord.Number, order.StatusProcessed, resp.Accrual); err != nil {
 			return fmt.Errorf("не удалось обновить статус заказа: %w", err)
 		}
 
-		// Начисляем баллы пользователю
-		if err := w.balanceService.AddPoints(ord.UserID, *resp.Accrual); err != nil {
-			log.Printf("КРИТИЧЕСКАЯ ОШИБКА: не удалось начислить баллы пользователю %d за заказ %s: %v",
-				ord.UserID, ord.Number, err)
-			// Не возвращаем ошибку, чтобы не блокировать обработку других заказов
+		// Начисляем баллы пользователю (только если есть начисление)
+		if resp.Accrual != nil && *resp.Accrual > 0 {
+			if err := w.balanceService.AddPoints(ord.UserID, *resp.Accrual); err != nil {
+				log.Printf("КРИТИЧЕСКАЯ ОШИБКА: не удалось начислить баллы пользователю %d за заказ %s: %v",
+					ord.UserID, ord.Number, err)
+				// Не возвращаем ошибку, чтобы не блокировать обработку других заказов
+			}
 		}
 
 		return nil

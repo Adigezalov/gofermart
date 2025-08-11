@@ -46,10 +46,8 @@ func (r *AccrualResponse) Validate() error {
 		return fmt.Errorf("неизвестный статус: %s", r.Status)
 	}
 
-	// Для статуса PROCESSED должно быть указано начисление
-	if r.Status == StatusProcessed && r.Accrual == nil {
-		return fmt.Errorf("для статуса PROCESSED должно быть указано начисление")
-	}
+	// Для статуса PROCESSED начисление может отсутствовать (если нет начислений за заказ)
+	// Это нормальная ситуация согласно спецификации
 
 	// Для других статусов начисление должно отсутствовать или быть нулевым
 	if r.Status != StatusProcessed && r.Accrual != nil && *r.Accrual > 0 {
