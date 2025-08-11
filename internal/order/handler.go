@@ -1,7 +1,6 @@
 package order
 
 import (
-	"enc
 	"io"
 	"net/http"
 	"strings"
@@ -36,7 +35,12 @@ func (h *Handler) SubmitOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверный формат запроса", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(r.Body)
 
 	orderNumber := strings.TrimSpace(string(body))
 	if orderNumber == "" {
@@ -78,4 +82,34 @@ func (h *Handler) SubmitOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Этот код не должен выполняться, но на всякий случай
 	w.WriteHeader(http.StatusAccepted)
+}
+
+// GetOrders обрабатывает GET /api/user/orders
+func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
+	// Получаем ID пользователя из контекста (установлен middleware авторизации)
+	userID, _, err := utils.GetCurrentUser(r.Context())
+	if err != nil {
+		http.Error(w, "Пользователь не авторизован", http.StatusUnauthorized)
+		return
+	}
+
+	// Получаем заказы пользователя через сервис
+	orders, err := h.service.GetUserOrders(userID)
+	if err != nil {
+		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
+		return
+	}
+
+	// Если у пользователя нет заказов
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// Устанавливаем заголовок Content-Type
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	// Возвращаем заказы в формате JSON
+	utils.WriteJSON(w, orders)
 }
