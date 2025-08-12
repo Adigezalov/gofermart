@@ -81,7 +81,7 @@ POST http://localhost:8080/api/user/orders
 Content-Type: text/plain
 Authorization: Bearer {{access_token}}
 
-9278923470
+79927398713
 
 > {%
     if (response.status === 202) {
@@ -110,6 +110,24 @@ Authorization: Bearer {{access_token}}
     } else {
         client.log("❌ Ошибка загрузки второго заказа: " + response.status);
     }
+%}
+
+### 3.121 Загрузка первого заказа
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer {{access_token}}
+
+92789234702
+
+> {%
+  if (response.status === 202) {
+    client.log("✅ Первый заказ принят в обработку");
+    client.global.set("order1", "92789234702");
+  } else if (response.status === 200) {
+    client.log("ℹ️ Первый заказ уже был загружен ранее");
+  } else {
+    client.log("❌ Ошибка загрузки первого заказа: " + response.status);
+  }
 %}
 
 ### 3.3 Проверка списка заказов
