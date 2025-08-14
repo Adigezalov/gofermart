@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -37,6 +38,8 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "Токен авторизации отсутствует", http.StatusUnauthorized)
 			return
 		}
+
+		fmt.Println(authHeader)
 
 		// Проверяем формат Bearer токена
 		parts := strings.SplitN(authHeader, " ", 2)
