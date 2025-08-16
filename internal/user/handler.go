@@ -45,14 +45,9 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Возвращаем токены
-	w.Header().Set("Content-Type", "application/json")
+	// Отправляем только access токен в заголовке Authorization
+	w.Header().Set("Authorization", "Bearer "+tokenPair.AccessToken)
 	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(tokenPair); err != nil {
-		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
-		return
-	}
 }
 
 // Login обрабатывает POST /api/user/login
@@ -80,12 +75,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Возвращаем токены
-	w.Header().Set("Content-Type", "application/json")
+	// Отправляем только access токен в заголовке Authorization
+	w.Header().Set("Authorization", "Bearer "+tokenPair.AccessToken)
 	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(tokenPair); err != nil {
-		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
-		return
-	}
 }
