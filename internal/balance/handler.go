@@ -28,10 +28,20 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем баланс пользователя через сервис
-	balance, err := h.service.GetUserBalance(userID)
+	bal, err := h.service.GetUserBalance(userID)
 	if err != nil {
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		return
+	}
+
+	// Готовим ответ в рублях
+	type balanceResponse struct {
+		Current   float64 `json:"current"`
+		Withdrawn float64 `json:"withdrawn"`
+	}
+	resp := balanceResponse{
+		Current:   centsToRub(bal.CurrentCents),
+		Withdrawn: centsToRub(bal.WithdrawnCents),
 	}
 
 	// Устанавливаем заголовок Content-Type
@@ -39,5 +49,5 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	// Возвращаем баланс в формате JSON
-	utils.WriteJSON(w, balance)
+	utils.WriteJSON(w, resp)
 }

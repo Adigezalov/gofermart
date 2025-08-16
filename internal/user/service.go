@@ -3,6 +3,7 @@ package user
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/Adigezalov/gophermart/internal/balance"
@@ -60,10 +61,9 @@ func (s *Service) RegisterUser(req *RegisterRequest) (*tokens.TokenPair, error) 
 
 	// Создаем начальный баланс для пользователя
 	if s.balanceService != nil {
-		if _, err := s.balanceService.GetUserBalance(user.ID); err != nil {
-			// Если баланс не существует, он будет создан автоматически в GetUserBalance
-			// Логируем ошибку, но не прерываем регистрацию
-			fmt.Printf("Предупреждение: не удалось создать баланс для пользователя %d: %v\n", user.ID, err)
+		if err := s.balanceService.EnsureBalance(user.ID); err != nil {
+			// Логируем предупреждение, но не прерываем регистрацию
+			log.Printf("Предупреждение: не удалось создать баланс для пользователя %d: %v", user.ID, err)
 		}
 	}
 

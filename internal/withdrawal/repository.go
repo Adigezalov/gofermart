@@ -22,13 +22,14 @@ func NewDatabaseRepository(db *sql.DB) *DatabaseRepository {
 }
 
 // CreateWithdrawal создает новую операцию списания
+// Пишем в amount_cents и синхронизируем старый amount (float)
 func (r *DatabaseRepository) CreateWithdrawal(withdrawal *Withdrawal) error {
 	query := `
-		INSERT INTO withdrawals (user_id, order_number, amount) 
-		VALUES ($1, $2, $3) 
+		INSERT INTO withdrawals (user_id, order_number, amount, amount_cents) 
+		VALUES ($1, $2, ($3::numeric / 100.0), $3) 
 		RETURNING id, processed_at`
 
-	err := r.db.QueryRow(query, withdrawal.UserID, withdrawal.OrderNumber, withdrawal.Amount).Scan(
+	err := r.db.QueryRow(query, withdrawal.UserID, withdrawal.OrderNumber, withdrawal.AmountCents).Scan(
 		&withdrawal.ID, &withdrawal.ProcessedAt,
 	)
 	if err != nil {
@@ -38,10 +39,10 @@ func (r *DatabaseRepository) CreateWithdrawal(withdrawal *Withdrawal) error {
 	return nil
 }
 
-// GetWithdrawalsByUserID получает все операции списания пользователя
+// GetWithdrawalsByUserID получает все операции списания пользователя (из *_cents)
 func (r *DatabaseRepository) GetWithdrawalsByUserID(userID int) ([]*Withdrawal, error) {
 	query := `
-		SELECT id, user_id, order_number, amount, processed_at 
+		SELECT id, user_id, order_number, amount_cents, processed_at 
 		FROM withdrawals 
 		WHERE user_id = $1 
 		ORDER BY processed_at DESC`
@@ -57,7 +58,7 @@ func (r *DatabaseRepository) GetWithdrawalsByUserID(userID int) ([]*Withdrawal, 
 		withdrawal := &Withdrawal{}
 		err := rows.Scan(
 			&withdrawal.ID, &withdrawal.UserID, &withdrawal.OrderNumber,
-			&withdrawal.Amount, &withdrawal.ProcessedAt,
+			&withdrawal.AmountCents, &withdrawal.ProcessedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("не удалось сканировать операцию списания: %w", err)

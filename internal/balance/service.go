@@ -3,6 +3,8 @@ package balance
 import (
 	"fmt"
 	"log"
+	"math"
+	"strings"
 )
 
 // Service содержит бизнес-логику для балансов
@@ -17,9 +19,24 @@ func NewService(repo Repository) *Service {
 	}
 }
 
+// EnsureBalance гарантирует наличие начального баланса для пользователя.
+// Если запись уже существует (duplicate key), не считается ошибкой.
+func (s *Service) EnsureBalance(userID int) error {
+	if err := s.repo.CreateBalance(userID); err != nil {
+		// Игнорируем конфликт уникальности (баланс уже есть)
+		if strings.Contains(err.Error(), "duplicate key") ||
+			strings.Contains(strings.ToLower(err.Error()), "unique") ||
+			strings.Contains(strings.ToLower(err.Error()), "уник") {
+			return nil
+		}
+		return fmt.Errorf("не удалось создать баланс: %w", err)
+	}
+	return nil
+}
+
 // GetUserBalance получает баланс пользователя
 func (s *Service) GetUserBalance(userID int) (*Balance, error) {
-	balance, err := s.repo.GetBalance(userID)
+	bal, err := s.repo.GetBalance(userID)
 	if err != nil {
 		// Если баланс не найден, создаем его
 		if err.Error() == "баланс пользователя не найден" {
@@ -27,7 +44,7 @@ func (s *Service) GetUserBalance(userID int) (*Balance, error) {
 				return nil, fmt.Errorf("не удалось создать баланс: %w", createErr)
 			}
 			// Повторно получаем созданный баланс
-			balance, err = s.repo.GetBalance(userID)
+			bal, err = s.repo.GetBalance(userID)
 			if err != nil {
 				return nil, fmt.Errorf("не удалось получить созданный баланс: %w", err)
 			}
@@ -35,11 +52,10 @@ func (s *Service) GetUserBalance(userID int) (*Balance, error) {
 			return nil, fmt.Errorf("не удалось получить баланс пользователя: %w", err)
 		}
 	}
-
-	return balance, nil
+	return bal, nil
 }
 
-// AddPoints добавляет баллы к балансу пользователя
+// AddPoints добавляет баллы к балансу пользователя (amount в рублях)
 func (s *Service) AddPoints(userID int, amount float64) error {
 	if amount <= 0 {
 		return fmt.Errorf("сумма начисления должна быть положительной")
@@ -51,8 +67,13 @@ func (s *Service) AddPoints(userID int, amount float64) error {
 		return fmt.Errorf("не удалось получить баланс для начисления: %w", err)
 	}
 
-	// Добавляем баллы (увеличиваем current, не изменяем withdrawn)
-	err = s.repo.UpdateBalance(userID, amount, 0)
+	amountCents, err := rubToCents(amount)
+	if err != nil {
+		return fmt.Errorf("неверная сумма начисления: %w", err)
+	}
+
+	// Добавляем баллы (увеличиваем current_cents, не изменяем withdrawn_cents)
+	err = s.repo.UpdateBalance(userID, amountCents, 0)
 	if err != nil {
 		log.Printf("Ошибка начисления %.2f баллов пользователю %d: %v", amount, userID, err)
 		return fmt.Errorf("не удалось начислить баллы: %w", err)
@@ -62,30 +83,36 @@ func (s *Service) AddPoints(userID int, amount float64) error {
 	return nil
 }
 
-// DeductPoints списывает баллы с баланса пользователя
+// DeductPoints списывает баллы с баланса пользователя (amount в рублях)
 func (s *Service) DeductPoints(userID int, amount float64) error {
 	if amount <= 0 {
 		return fmt.Errorf("сумма списания должна быть положительной")
 	}
 
 	// Получаем текущий баланс
-	balance, err := s.GetUserBalance(userID)
+	bal, err := s.GetUserBalance(userID)
 	if err != nil {
 		return fmt.Errorf("не удалось получить баланс для списания: %w", err)
 	}
 
-	// Проверяем достаточность средств
-	if balance.Current < amount {
-		log.Printf("Недостаточно средств для списания у пользователя %d: доступно %.2f, запрошено %.2f", 
-			userID, balance.Current, amount)
+	amountCents, err := rubToCents(amount)
+	if err != nil {
+		return fmt.Errorf("неверная сумма списания: %w", err)
+	}
+
+	// Проверяем достаточность средств (в копейках)
+	if bal.CurrentCents < amountCents {
+		availableRub := centsToRub(bal.CurrentCents)
+		log.Printf("Недостаточно средств для списания у пользователя %d: доступно %.2f, запрошено %.2f",
+			userID, availableRub, amount)
 		return &InsufficientFundsError{
-			Available: balance.Current,
+			Available: availableRub,
 			Requested: amount,
 		}
 	}
 
-	// Списываем баллы (уменьшаем current, увеличиваем withdrawn)
-	err = s.repo.UpdateBalance(userID, -amount, amount)
+	// Списываем баллы (уменьшаем current_cents, увеличиваем withdrawn_cents)
+	err = s.repo.UpdateBalance(userID, -amountCents, amountCents)
 	if err != nil {
 		log.Printf("Ошибка списания %.2f баллов у пользователя %d: %v", amount, userID, err)
 		return fmt.Errorf("не удалось списать баллы: %w", err)
@@ -95,6 +122,21 @@ func (s *Service) DeductPoints(userID int, amount float64) error {
 	return nil
 }
 
+// Вспомогательные функции конвертации
+
+func rubToCents(amount float64) (int64, error) {
+	// Округление до ближайшей копейки
+	v := math.Round(amount * 100.0)
+	if v > float64(math.MaxInt64) || v < float64(math.MinInt64) {
+		return 0, fmt.Errorf("сумма выходит за пределы int64")
+	}
+	return int64(v), nil
+}
+
+func centsToRub(cents int64) float64 {
+	return float64(cents) / 100.0
+}
+
 // InsufficientFundsError ошибка недостаточности средств
 type InsufficientFundsError struct {
 	Available float64
@@ -102,6 +144,6 @@ type InsufficientFundsError struct {
 }
 
 func (e *InsufficientFundsError) Error() string {
-	return fmt.Sprintf("недостаточно средств: доступно %.2f, запрошено %.2f", 
+	return fmt.Sprintf("недостаточно средств: доступно %.2f, запрошено %.2f",
 		e.Available, e.Requested)
 }

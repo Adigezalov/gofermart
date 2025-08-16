@@ -8,7 +8,7 @@ import (
 // Repository интерфейс для работы с балансами в БД
 type Repository interface {
 	GetBalance(userID int) (*Balance, error)
-	UpdateBalance(userID int, currentDelta, withdrawnDelta float64) error
+	UpdateBalance(userID int, currentDeltaCents, withdrawnDeltaCents int64) error
 	CreateBalance(userID int) error
 }
 
@@ -22,17 +22,17 @@ func NewDatabaseRepository(db *sql.DB) *DatabaseRepository {
 	return &DatabaseRepository{db: db}
 }
 
-// GetBalance получает баланс пользователя
+// GetBalance получает баланс пользователя (из *_cents)
 func (r *DatabaseRepository) GetBalance(userID int) (*Balance, error) {
 	balance := &Balance{}
 	query := `
-		SELECT id, user_id, current, withdrawn, updated_at 
+		SELECT id, user_id, current_cents, withdrawn_cents, updated_at 
 		FROM user_balances 
 		WHERE user_id = $1`
 
 	err := r.db.QueryRow(query, userID).Scan(
-		&balance.ID, &balance.UserID, &balance.Current, 
-		&balance.Withdrawn, &balance.UpdatedAt,
+		&balance.ID, &balance.UserID, &balance.CurrentCents,
+		&balance.WithdrawnCents, &balance.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -44,8 +44,9 @@ func (r *DatabaseRepository) GetBalance(userID int) (*Balance, error) {
 	return balance, nil
 }
 
-// UpdateBalance обновляет баланс пользователя атомарно
-func (r *DatabaseRepository) UpdateBalance(userID int, currentDelta, withdrawnDelta float64) error {
+// UpdateBalance обновляет баланс пользователя атомарно в копейках,
+// поддерживая синхронизацию старых float-колонок для бесшовной миграции.
+func (r *DatabaseRepository) UpdateBalance(userID int, currentDeltaCents, withdrawnDeltaCents int64) error {
 	// Используем транзакцию для атомарности операции
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -55,10 +56,16 @@ func (r *DatabaseRepository) UpdateBalance(userID int, currentDelta, withdrawnDe
 
 	query := `
 		UPDATE user_balances 
-		SET current = current + $1, withdrawn = withdrawn + $2, updated_at = NOW() 
+		SET 
+			current_cents   = current_cents + $1,
+			withdrawn_cents = withdrawn_cents + $2,
+			-- поддерживаем старые float-поля для обратной совместимости
+			current   = current + ($1::numeric / 100.0),
+			withdrawn = withdrawn + ($2::numeric / 100.0),
+			updated_at = NOW() 
 		WHERE user_id = $3`
 
-	result, err := tx.Exec(query, currentDelta, withdrawnDelta, userID)
+	result, err := tx.Exec(query, currentDeltaCents, withdrawnDeltaCents, userID)
 	if err != nil {
 		return fmt.Errorf("не удалось обновить баланс: %w", err)
 	}
@@ -79,11 +86,11 @@ func (r *DatabaseRepository) UpdateBalance(userID int, currentDelta, withdrawnDe
 	return nil
 }
 
-// CreateBalance создает начальный баланс для пользователя
+// CreateBalance создает начальный баланс для пользователя (обе схемы)
 func (r *DatabaseRepository) CreateBalance(userID int) error {
 	query := `
-		INSERT INTO user_balances (user_id, current, withdrawn) 
-		VALUES ($1, 0.00, 0.00)`
+		INSERT INTO user_balances (user_id, current, withdrawn, current_cents, withdrawn_cents) 
+		VALUES ($1, 0.00, 0.00, 0, 0)`
 
 	_, err := r.db.Exec(query, userID)
 	if err != nil {

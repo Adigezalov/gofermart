@@ -4,11 +4,11 @@ import (
 	"time"
 )
 
-// Balance представляет баланс пользователя
+// Balance представляет баланс пользователя (в копейках для хранения/расчетов)
 type Balance struct {
-	ID        int       `json:"-" db:"id"`
-	UserID    int       `json:"-" db:"user_id"`
-	Current   float64   `json:"current" db:"current"`
-	Withdrawn float64   `json:"withdrawn" db:"withdrawn"`
-	UpdatedAt time.Time `json:"-" db:"updated_at"`
+	ID             int       `json:"-" db:"id"`
+	UserID         int       `json:"-" db:"user_id"`
+	CurrentCents   int64     `json:"-" db:"current_cents"`
+	WithdrawnCents int64     `json:"-" db:"withdrawn_cents"`
+	UpdatedAt      time.Time `json:"-" db:"updated_at"`
 }
