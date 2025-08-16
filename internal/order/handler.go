@@ -35,12 +35,7 @@ func (h *Handler) SubmitOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Неверный формат запроса", http.StatusBadRequest)
 		return
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-
-		}
-	}(r.Body)
+	defer r.Body.Close()
 
 	orderNumber := strings.TrimSpace(string(body))
 	if orderNumber == "" {
