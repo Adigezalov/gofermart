@@ -102,6 +102,7 @@ func (m *Migrator) getMigrationFiles() ([]string, error) {
 		"003_create_orders_table.sql",
 		"004_create_user_balances_table.sql",
 		"005_create_withdrawals_table.sql",
+		"006_add_money_cents.sql",
 	}
 
 	return files, nil
@@ -148,6 +149,9 @@ func (m *Migrator) getEmbeddedMigration(filename string) (string, error) {
 
 	case "005_create_withdrawals_table.sql":
 		return m.getWithdrawalsTableMigration(), nil
+
+	case "006_add_money_cents.sql":
+		return m.getAddMoneyCentsMigration(), nil
 
 	default:
 		return "", fmt.Errorf("неизвестная миграция: %s", filename)
@@ -324,4 +328,34 @@ CREATE TABLE IF NOT EXISTS withdrawals (
 CREATE INDEX IF NOT EXISTS idx_withdrawals_user_id ON withdrawals(user_id);
 CREATE INDEX IF NOT EXISTS idx_withdrawals_processed_at ON withdrawals(processed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_withdrawals_order_number ON withdrawals(order_number);`
+}
+
+// getAddMoneyCentsMigration добавляет *_cents колонки и инициализирует их на основе старых значений
+func (m *Migrator) getAddMoneyCentsMigration() string {
+	return `-- Добавление колонок в копейках для денежных значений
+
+BEGIN;
+
+-- user_balances: добавляем current_cents и withdrawn_cents
+ALTER TABLE user_balances
+    ADD COLUMN IF NOT EXISTS current_cents BIGINT NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS withdrawn_cents BIGINT NOT NULL DEFAULT 0;
+
+-- Инициализируем из существующих значений (округление до копейки)
+UPDATE user_balances
+SET current_cents   = COALESCE(ROUND(current * 100.0), 0)::BIGINT,
+    withdrawn_cents = COALESCE(ROUND(withdrawn * 100.0), 0)::BIGINT
+WHERE (current_cents = 0 AND current IS NOT NULL)
+   OR (withdrawn_cents = 0 AND withdrawn IS NOT NULL);
+
+-- withdrawals: добавляем amount_cents
+ALTER TABLE withdrawals
+    ADD COLUMN IF NOT EXISTS amount_cents BIGINT NOT NULL DEFAULT 0;
+
+-- Инициализация amount_cents из старого amount
+UPDATE withdrawals
+SET amount_cents = COALESCE(ROUND(amount * 100.0), 0)::BIGINT
+WHERE amount IS NOT NULL AND amount_cents = 0;
+
+COMMIT;`
 }
