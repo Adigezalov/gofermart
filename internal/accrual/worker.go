@@ -24,7 +24,7 @@ func NewWorker(client *Client, orderRepo order.Repository, balanceService *balan
 		client:         client,
 		orderRepo:      orderRepo,
 		balanceService: balanceService,
-		interval:       30 * time.Second, // Проверяем каждые 30 секунд
+		interval:       1 * time.Second, // Частый опрос для быстрой обработки
 	}
 }
 

@@ -89,10 +89,25 @@ func (h *Handler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Готовим ответ: конвертируем суммы из копеек в рубли и используем ожидаемую схему
+	type item struct {
+		Order       string  `json:"order"`
+		Sum         float64 `json:"sum"`
+		ProcessedAt string  `json:"processed_at"`
+	}
+	resp := make([]item, 0, len(withdrawals))
+	for _, wd := range withdrawals {
+		resp = append(resp, item{
+			Order:       wd.OrderNumber,
+			Sum:         float64(wd.AmountCents) / 100.0,
+			ProcessedAt: wd.ProcessedAt.Format("2006-01-02T15:04:05Z07:00"),
+		})
+	}
+
 	// Устанавливаем заголовок Content-Type
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	// Возвращаем историю списаний в формате JSON
-	utils.WriteJSON(w, withdrawals)
+	utils.WriteJSON(w, resp)
 }
