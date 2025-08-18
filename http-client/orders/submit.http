@@ -1,0 +1,74 @@
+### Тестирование загрузки заказов POST /api/user/orders
+
+### 1. Сначала зарегистрируем пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "ordertest",
+  "password": "password123"
+}
+
+### 2. Авторизуемся и получаем токены
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "ordertest",
+  "password": "password123"
+}
+
+### 3. Загружаем валидный заказ (ожидается 202: новый заказ принят в обработку)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTQ4NTkzNDEsImlhdCI6MTc1NDg1OTI4MSwibG9naW4iOiJvcmRlcnRlc3QiLCJ0eXBlIjoiYWNjZXNzIiwidXNlcl9pZCI6NX0.XPJDDwqEH9P_wejTrTDIaUBfW738hSPZiT-4xtVZDCI
+
+9278923470
+
+### 4. Повторно загружаем тот же заказ (ожидается 200: заказ уже был загружен этим пользователем)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+79927398713
+
+### 5. Загружаем заказ без токена (ожидается 401: пользователь не аутентифицирован)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+
+12345678903
+
+### 6. Загружаем невалидный номер по алгоритму Луна (ожидается 422: неверный формат номера заказа)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+79927398714
+
+### 7. Загружаем номер с буквами (ожидается 422: номер заказа должен содержать только цифры)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+abc123
+
+### 8. Загружаем пустой номер (ожидается 400: номер заказа не может быть пустым)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+
+
+### 9. Загружаем другой валидный заказ (ожидается 202)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+12345678903
+
+### 10. Загружаем еще один валидный заказ (ожидается 202)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+9278923470

@@ -1,0 +1,82 @@
+### Тестирование списания баллов POST /api/user/balance/withdraw
+
+### 1. Сначала зарегистрируем пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "withdrawtest",
+  "password": "password123"
+}
+
+### 2. Авторизуемся и получаем токены
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "withdrawtest",
+  "password": "password123"
+}
+
+### 3. Проверяем начальный баланс (должен быть 0)
+GET http://localhost:8080/api/user/balance
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 4. Попытка списать баллы при нулевом балансе (ожидается 402: недостаточно средств)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "79927398713",
+  "sum": 100
+}
+
+### 5. Попытка списать с неверным номером заказа (ожидается 422: неверный формат)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "12345",
+  "sum": 50
+}
+
+### 6. Попытка списать с невалидным номером по алгоритму Луна (ожидается 422)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "1234567890",
+  "sum": 50
+}
+
+### 7. Попытка списать отрицательную сумму (ожидается 400: неверный формат)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "79927398713",
+  "sum": -10
+}
+
+### 8. Попытка списать без авторизации (ожидается 401)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+
+{
+  "order": "79927398713",
+  "sum": 100
+}
+
+### 9. Попытка списать с неверным JSON (ожидается 400)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "79927398713",
+  "sum": "invalid"
+}
