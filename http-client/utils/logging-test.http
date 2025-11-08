@@ -1,0 +1,40 @@
+### Тестирование logging middleware
+
+### 1. GET запрос к публичному эндпоинту
+GET http://localhost:8080/api/health/check
+
+### 2. POST запрос с JSON (регистрация)
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "logtest",
+  "password": "password123"
+}
+
+### 3. POST запрос с JSON (авторизация)
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "logtest",
+  "password": "password123"
+}
+
+### 4. GET запрос к защищенному эндпоинту без токена (401)
+GET http://localhost:8080/api/health/auth
+
+### 5. GET запрос к несуществующему эндпоинту (404)
+GET http://localhost:8080/api/nonexistent
+
+### 6. POST запрос с неверным JSON (400)
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "test"
+  "password": "123"
+}
+
+### 7. GET запрос к БД healthcheck
+GET http://localhost:8080/api/health/db

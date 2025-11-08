@@ -1,0 +1,7 @@
+### Проверка запуска сервера
+GET http://localhost:8080/api/health/check
+Accept: application/json
+
+### Проверка коннекта к БД
+GET http://localhost:8080/api/health/db
+Accept: application/json

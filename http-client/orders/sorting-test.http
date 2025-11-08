@@ -1,0 +1,56 @@
+### Тестирование сортировки заказов по времени загрузки
+
+### 1. Регистрируем пользователя для тестирования сортировки
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "sorttest",
+  "password": "password123"
+}
+
+### 2. Авторизуемся
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "sorttest",
+  "password": "password123"
+}
+
+### 3. Загружаем заказы с интервалом (для проверки сортировки по времени)
+
+### Заказ 1 (самый старый)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+79927398713
+
+### Небольшая пауза...
+
+### Заказ 2 (средний)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+12345678903
+
+### Еще пауза...
+
+### Заказ 3 (самый новый)
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+9278923470
+
+### 4. Получаем список заказов - должны быть отсортированы от новых к старым
+### Ожидаемый порядок: 9278923470, 12345678903, 79927398713
+GET http://localhost:8080/api/user/orders
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### Проверьте в ответе:
+### - Поле "uploaded_at" должно убывать (новые заказы сверху)
+### - Все заказы должны иметь status: "NEW"
+### - Поле "accrual" должно быть null или отсутствовать

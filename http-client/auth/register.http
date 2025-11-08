@@ -1,0 +1,44 @@
+### Регистрация пользователя - успешная (ожидается 200 с токенами)
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "testuser",
+  "password": "password123"
+}
+
+### Регистрация пользователя - дублирующий логин (ожидается 409: "Логин уже занят")
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "testuser",
+  "password": "password456"
+}
+
+### Регистрация пользователя - короткий пароль (ожидается 400: "пароль должен содержать минимум 6 символов")
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "testuser2",
+  "password": "123"
+}
+
+### Регистрация пользователя - пустой логин (ожидается 400: "логин обязателен")
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "",
+  "password": "password123"
+}
+
+### Регистрация пользователя - невалидный JSON (ожидается 400: "Неверный формат запроса")
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "testuser3"
+  "password": "password123"
+}

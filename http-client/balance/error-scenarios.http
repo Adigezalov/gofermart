@@ -1,0 +1,152 @@
+### Тестирование сценариев ошибок в системе начисления баллов
+
+### 1. Регистрируем пользователя для тестирования ошибок
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "errortest",
+  "password": "password123"
+}
+
+### 2. Авторизуемся
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "errortest",
+  "password": "password123"
+}
+
+### Тестирование ошибок получения баланса
+
+### 3. Получение баланса с невалидным токеном (401)
+GET http://localhost:8080/api/user/balance
+Authorization: Bearer invalid_token_here
+
+### 4. Получение баланса без заголовка Authorization (401)
+GET http://localhost:8080/api/user/balance
+
+### Тестирование ошибок списания баллов
+
+### 5. Списание без авторизации (401)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+
+{
+  "order": "79927398713",
+  "sum": 100
+}
+
+### 6. Списание с невалидным JSON (400)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "79927398713",
+  "sum": "not_a_number"
+}
+
+### 7. Списание с пустым телом запроса (400)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 8. Списание с неверным Content-Type (400)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{"order": "79927398713", "sum": 100}
+
+### 9. Списание с пустым номером заказа (400)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "",
+  "sum": 100
+}
+
+### 10. Списание с отрицательной суммой (400)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "79927398713",
+  "sum": -50
+}
+
+### 11. Списание с нулевой суммой (400)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "79927398713",
+  "sum": 0
+}
+
+### 12. Списание с номером заказа, содержащим буквы (422)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "abc123def",
+  "sum": 100
+}
+
+### 13. Списание с номером заказа, не прошедшим валидацию Луна (422)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "1234567890",
+  "sum": 100
+}
+
+### 14. Списание при недостатке средств (402)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "79927398713",
+  "sum": 10000
+}
+
+### Тестирование ошибок получения истории списаний
+
+### 15. Получение истории без авторизации (401)
+GET http://localhost:8080/api/user/withdrawals
+
+### 16. Получение истории с невалидным токеном (401)
+GET http://localhost:8080/api/user/withdrawals
+Authorization: Bearer invalid_token
+
+### Тестирование граничных случаев
+
+### 17. Списание очень большой суммы
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "79927398713",
+  "sum": 999999999.99
+}
+
+### 18. Списание с очень длинным номером заказа
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "123456789012345678901234567890123456789012345678901234567890",
+  "sum": 100
+}

@@ -1,0 +1,53 @@
+### Авторизация пользователя - успешная (ожидается 200 с токенами)
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "testuser",
+  "password": "password123"
+}
+
+### Авторизация пользователя - неверный пароль (ожидается 401: "Неверная пара логин/пароль")
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "testuser",
+  "password": "wrongpassword"
+}
+
+### Авторизация пользователя - несуществующий логин (ожидается 401: "Неверная пара логин/пароль")
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "nonexistentuser",
+  "password": "password123"
+}
+
+### Авторизация пользователя - пустой логин (ожидается 400: "логин обязателен")
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "",
+  "password": "password123"
+}
+
+### Авторизация пользователя - пустой пароль (ожидается 400: "пароль обязателен")
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "testuser",
+  "password": ""
+}
+
+### Авторизация пользователя - невалидный JSON (ожидается 400: "Неверный формат запроса")
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "testuser"
+  "password": "password123"
+}

@@ -1,0 +1,51 @@
+### Полный цикл авторизации и использования защищенных эндпоинтов
+
+### Шаг 1: Регистрация пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "completetest",
+  "password": "password123"
+}
+
+> {%
+    // Сохраняем токены из ответа
+    if (response.status === 200) {
+        client.global.set("access_token", response.body.access_token);
+        client.global.set("refresh_token", response.body.refresh_token);
+        client.log("Токены сохранены после регистрации");
+    }
+%}
+
+### Шаг 2: Проверяем защищенный эндпоинт с токеном из регистрации
+GET http://localhost:8080/api/health/auth
+Authorization: Bearer {{access_token}}
+
+### Шаг 3: Авторизация (обновляет токены)
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "completetest",
+  "password": "password123"
+}
+
+> {%
+    // Обновляем токены после авторизации
+    if (response.status === 200) {
+        client.global.set("access_token", response.body.access_token);
+        client.global.set("refresh_token", response.body.refresh_token);
+        client.log("Токены обновлены после авторизации");
+    }
+%}
+
+### Шаг 4: Проверяем защищенный эндпоинт с новым токеном
+GET http://localhost:8080/api/health/auth
+Authorization: Bearer {{access_token}}
+
+### Шаг 5: Проверяем обычные эндпоинты (без токена)
+GET http://localhost:8080/api/health/check
+
+### Шаг 6: Проверяем БД эндпоинт (без токена)
+GET http://localhost:8080/api/health/db

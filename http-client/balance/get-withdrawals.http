@@ -1,0 +1,44 @@
+### Тестирование получения истории списаний GET /api/user/withdrawals
+
+### 1. Сначала зарегистрируем пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "withdrawalstest",
+  "password": "password123"
+}
+
+### 2. Авторизуемся и получаем токены
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "withdrawalstest",
+  "password": "password123"
+}
+
+### 3. Получаем пустую историю списаний (ожидается 204: нет данных)
+GET http://localhost:8080/api/user/withdrawals
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 4. Попытка получить историю без авторизации (ожидается 401)
+GET http://localhost:8080/api/user/withdrawals
+
+### Примечание: Для тестирования истории с данными нужно:
+### 1. Добавить баллы на баланс (через систему начислений или напрямую в БД)
+### 2. Выполнить успешное списание
+### 3. Проверить, что история содержит операцию списания
+
+### Пример после успешного списания (ожидается 200 с JSON массивом):
+### GET http://localhost:8080/api/user/withdrawals
+### Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+###
+### Ожидаемый ответ:
+### [
+###   {
+###     "order": "79927398713",
+###     "sum": 100,
+###     "processed_at": "2025-08-11T18:25:37Z"
+###   }
+### ]

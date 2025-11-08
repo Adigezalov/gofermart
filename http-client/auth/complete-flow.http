@@ -1,0 +1,35 @@
+### 1. Регистрация нового пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "flowtest",
+  "password": "password123"
+}
+
+### 2. Авторизация зарегистрированного пользователя
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "flowtest",
+  "password": "password123"
+}
+
+### 3. Повторная авторизация (должна удалить старый refresh токен и создать новый)
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "flowtest",
+  "password": "password123"
+}
+
+### 4. Попытка регистрации с уже существующим логином (ожидается 409)
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "flowtest",
+  "password": "newpassword"
+}

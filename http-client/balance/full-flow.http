@@ -1,0 +1,80 @@
+### Полный цикл работы с системой начисления баллов
+
+### Этот файл демонстрирует полный цикл:
+### 1. Регистрация пользователя
+### 2. Загрузка заказа
+### 3. Проверка баланса
+### 4. Списание баллов (после начисления)
+### 5. Проверка истории
+
+### 1. Регистрируем нового пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "fullflowtest",
+  "password": "password123"
+}
+
+### 2. Авторизуемся
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "fullflowtest",
+  "password": "password123"
+}
+
+### 3. Проверяем начальный баланс (должен быть 0/0)
+GET http://localhost:8080/api/user/balance
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 4. Загружаем заказ для начисления баллов
+POST http://localhost:8080/api/user/orders
+Content-Type: text/plain
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+79927398713
+
+### 5. Проверяем список заказов (статус должен быть NEW)
+GET http://localhost:8080/api/user/orders
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 6. Ждем обработки заказа системой начислений...
+### (В реальном сценарии нужно подождать, пока accrual worker обработает заказ)
+
+### 7. Проверяем баланс после начисления
+GET http://localhost:8080/api/user/balance
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 8. Проверяем обновленный список заказов (статус должен измениться)
+GET http://localhost:8080/api/user/orders
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 9. Списываем часть баллов (только после начисления!)
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "49927398716",
+  "sum": 100
+}
+
+### 10. Проверяем баланс после списания
+GET http://localhost:8080/api/user/balance
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 11. Проверяем историю списаний
+GET http://localhost:8080/api/user/withdrawals
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 12. Пытаемся списать больше, чем доступно
+POST http://localhost:8080/api/user/balance/withdraw
+Content-Type: application/json
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+{
+  "order": "12345678903",
+  "sum": 10000
+}

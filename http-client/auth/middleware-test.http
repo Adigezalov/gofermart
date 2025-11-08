@@ -1,0 +1,36 @@
+### 1. Сначала зарегистрируем пользователя
+POST http://localhost:8080/api/user/register
+Content-Type: application/json
+
+{
+  "login": "authtest",
+  "password": "password123"
+}
+
+### 2. Авторизуемся и получаем токены
+POST http://localhost:8080/api/user/login
+Content-Type: application/json
+
+{
+  "login": "authtest",
+  "password": "password123"
+}
+
+### 3. Тестируем защищенный healthcheck БЕЗ токена (ожидается 401: "Токен авторизации отсутствует")
+GET http://localhost:8080/api/health/auth
+
+### 4. Тестируем защищенный healthcheck С токеном (ожидается 200: {"status": "ok"})
+# ВАЖНО: Замените токен на актуальный из ответа выше (токены живут 1 минуту)
+GET http://localhost:8080/api/health/auth
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+### 5. Тестируем с неверным токеном (ожидается 401: "Недействительный токен авторизации")
+GET http://localhost:8080/api/health/auth
+Authorization: Bearer invalid_token
+
+### 6. Тестируем с неверным форматом заголовка (ожидается 401: "Неверный формат токена авторизации")
+GET http://localhost:8080/api/health/auth
+Authorization: invalid_format
+
+### 7. Обычный healthcheck (должен работать без токена)
+GET http://localhost:8080/api/health/check
